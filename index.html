@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRIGPASNESAGA | Paskibra SMP Negeri 1 Gabuswetan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root {
+            --bg-primary: #1C2331;
+            --bg-secondary: #283241;
+            --bg-tertiary: #3A4557;
+            --text-primary: #E0E6F0;
+            --text-secondary: #9CA3AF;
+            --text-dark: #1F2937;
+            --text-darker: #111827;
+            --accent-gold: #D4AF37;
+            --accent-crimson: #A52A2A;
+            --border-color: #3A4557;
+        }
+
+        .light-mode {
+            --bg-primary: #F8FAFC;
+            --bg-secondary: #FFFFFF;
+            --bg-tertiary: #F1F5F9;
+            --text-primary: #1E293B;
+            --text-secondary: #475569;
+            --text-dark: #0F172A;
+            --text-darker: #020617;
+            --accent-gold: #B45309;
+            --accent-crimson: #DC2626;
+            --border-color: #E2E8F0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding-bottom: 80px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .page-content {
+            display: none;
+            opacity: 0; 
+            transform: translateY(10px); 
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out; 
+        }
+        .page-content.active {
+            display: block;
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+        .text-accent-gold {
+            color: var(--accent-gold);
+        }
+        .text-accent-crimson {
+            color: var(--accent-crimson);
+        }
+        .text-primary {
+            color: var(--text-primary);
+        }
+        .text-secondary {
+            color: var(--text-secondary);
+        }
+        .bg-card-dark {
+            background-color: var(--bg-secondary); 
+            border: 1px solid var(--border-color);
+        }
+        .bg-card-dark-highlight {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            z-index: 40;
+            padding: 8px 0;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        .nav-item.active {
+            color: var(--accent-gold);
+        }
+        .music-control-card {
+            position: fixed;
+            bottom: 5rem;
+            right: 1.5rem;
+            z-index: 1000;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .admin-form {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+        .btn-primary {
+            background-color: var(--accent-crimson);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+        .btn-primary:hover {
+            background-color: #8B2323;
+        }
+        .btn-secondary {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .login-container {
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        /* Modal */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.85);
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            max-width: 90vw;
+            max-height: 90vh;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        .playlist-item {
+            transition: background-color 0.2s ease;
+            color: var(--text-primary);
+        }
+        .playlist-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+        .playlist-item.active {
+            background-color: var(--accent-crimson);
+            color: white;
+        }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: var(--accent-gold);
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        /* Struktur Organisasi */
+        .structure-item {
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 0;
+        }
+        .structure-item:last-child {
+            border-bottom: none;
+        }
+        .structure-position {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+        .structure-name {
+            color: var(--text-secondary);
+        }
+        .structure-highlight {
+            background-color: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        /* Header */
+        .header-dark {
+            background-color: #1C2331;
+            border-bottom-color: #3A4557;
+        }
+        .header-light {
+            background-color: #FFFFFF;
+            border-bottom-color: #E2E8F0;
+        }
+        
+        /* Footer */
+        .footer-dark {
+            background-color: #0F172A;
+            border-top-color: #3A4557;
+        }
+        .footer-light {
+            background-color: #F1F5F9;
+            border-top-color: #E2E8F0;
+        }
+        
+        /* Improved text contrast for light mode */
+        .light-mode .text-gray-200,
+        .light-mode .text-gray-300,
+        .light-mode .text-gray-400 {
+            color: var(--text-secondary);
+        }
+        
+        .light-mode .modal-content,
+        .light-mode .modal-content p,
+        .light-mode .modal-content h2,
+        .light-mode .modal-content h3 {
+            color: var(--text-primary);
+        }
+        
+        .light-mode .playlist-modal {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .light-mode .image-modal {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .light-mode .image-modal img {
+            border-color: var(--border-color);
+        }
+    </style>
+</head>
+<body class="text-primary">
+
+    <!-- HEADER -->
+    <header class="shadow-xl sticky top-0 z-50 border-b header-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0">
+                    <span class="text-xl font-bold text-accent-gold">BRIGPASNESAGA</span>
+                    <span class="text-xl font-medium text-secondary ml-2 hidden sm:inline-block">SMPN 1 Gabuswetan</span> 
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Toggle Dark/Light Mode -->
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="moon" class="w-5 h-5 text-secondary"></i>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="theme-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <i data-lucide="sun" class="w-5 h-5 text-secondary"></i>
+                    </div>
+                    
+                    <button id="playlist-open-btn" class="p-2 rounded-md text-secondary hover:text-accent-gold hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent-gold" title="Buka Playlist">
+                        <span class="sr-only">Buka daftar lagu</span>
+                        <i data-lucide="list-music" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- KONTEN UTAMA -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- HALAMAN BERANDA -->
+        <section id="home" class="page-content active">
+            <div class="bg-card-dark p-6 md:p-10 rounded-xl shadow-lg">
+                <div class="flex flex-col items-center mb-8">
+                    <img src="https://files.catbox.moe/nretmz.jpg" alt="Logo Paskibra Brigpasnesaga" class="w-48 h-48 sm:w-64 sm:h-64 object-cover rounded-full border-4 border-accent-gold shadow-lg mb-6 animate-pulse" />
+                    <h1 class="text-3xl md:text-5xl font-extrabold text-accent-gold mb-6 text-center">BRIGPASNESAGA</h1>
+                    <p class="text-lg text-secondary mb-8 text-center max-w-2xl">
+                        Selamat datang di Website Resmi Pasukan Pengibar Bendera SMP Negeri 1 Gabuswetan!
+                    </p>
+                </div>
+                
+                <h2 class="text-2xl font-bold text-accent-crimson mb-3">Brigpas Nesaga</h2>
+                <p class="text-lg text-primary leading-relaxed mb-6">
+                    Brigpas nesaga adalah Singkatan Dari Brigade Paskibra Negeri Satu Gabuswetan. Brigpas Nesaga Berdiri pada 3 april 2015. Brigpas nesaga Juga Adalah salah satu ekstrakurikuler yang ada di SMPN 1 Gabuswetan yang menjadi opsi untuk membentuk karakter yang disiplin, bermoral.
+                </p>
+
+                <h2 class="text-2xl font-bold text-accent-crimson mb-3">Kegiatan Yang Di lakukan</h2>
+                <p class="text-lg text-primary leading-relaxed mb-4">
+                    Kegiatan kami tidak hanya latihan untuk upacara hari Senin. Kami juga melakukan:
+                </p>
+                <ul class="list-disc list-inside text-lg text-primary space-y-2 leading-relaxed">
+                    <li><b>Latihan Fisik dan Mental:</b> Membangun ketahanan, kekuatan, dan kedisiplinan pribadi.</li>
+                    <li><b>Latihan Baris-Berbaris (PBB):</b> Melatih kekompakan, ketertiban, dan keindahan gerakan.</li>
+                    <li><b>Tata Upacara Bendera (TUB):</b> Mempelajari dan mempraktikkan seluruh elemen upacara bendera sesuai aturan yang berlaku.</li>
+                    <li><b>Mengikuti Lomba:</b> Berkompetisi dalam Lomba Keterampilan Baris-Berbaris (LKBB) untuk menguji kemampuan dan mental juara.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- HALAMAN GALERI -->
+        <section id="galeri" class="page-content">
+            <div class="bg-card-dark p-6 md:p-10 rounded-xl shadow-lg">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-accent-gold mb-6">Galeri Kenangan</h1>
+                <p class="text-lg text-secondary mb-8">Momen-momen terbaik yang berhasil kami abadikan. Klik foto untuk melihat lebih besar.</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="gallery-container">
+                    <!-- Galeri akan diisi dengan JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- HALAMAN PRESTASI -->
+        <section id="prestasi" class="page-content">
+            <div class="bg-card-dark p-6 md:p-10 rounded-xl shadow-lg">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-accent-gold mb-6">Piala dan Prestasi</h1>
+                <p class="text-lg text-secondary mb-8">Piala Atau Penghargaan Yang Di Dapatkan Oleh Paskibra Smpn 1 Gabuswetan. Angkatan 11/12.</p>
+
+                <div class="space-y-6" id="achievements-container">
+                    <!-- Prestasi akan diisi dengan JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- HALAMAN STRUKTUR ORGANISASI -->
+        <section id="struktur" class="page-content">
+            <div class="bg-card-dark p-6 md:p-10 rounded-xl shadow-lg">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-accent-gold mb-6">Struktur Organisasi</h1>
+                <p class="text-lg text-secondary mb-8">Pejabat Teras Paskibra SMP Negeri 1 Gabuswetan periode 2025/2026</p>
+
+                <div class="space-y-4" id="structure-container">
+                    <!-- Struktur akan diisi dengan JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- HALAMAN MASUKAN -->
+        <section id="masukan" class="page-content">
+            <div class="bg-card-dark p-6 md:p-10 rounded-xl shadow-lg">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-accent-gold mb-6">Kirim Masukan atau Saran</h1>
+                <p class="text-lg text-secondary mb-8">Berikan saran/kritik Anda untuk kemajuan BRIGPASNESAGA.</p>
+
+                <div class="space-y-4">
+                    <label for="feedback-input" class="block text-sm font-medium text-primary">Tulis Masukan Anda</label>
+                    <textarea id="feedback-input" rows="6" maxlength="500" class="w-full p-4 rounded-lg bg-card-dark-highlight border border-border-color text-primary placeholder-secondary focus:ring-accent-gold focus:border-accent-gold transition" placeholder="Contoh: Website ini sudah bagus, namun menu Galeri bisa ditambahkan fitur filter tahun."></textarea>
+                    
+                    <button id="send-whatsapp-btn" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-accent-crimson text-white font-semibold hover:bg-red-700 transition duration-300 flex items-center justify-center space-x-2 shadow-md">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        <span>Kirim via WhatsApp Admin</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- HALAMAN ADMIN - LOGIN MENYATU -->
+        <section id="admin" class="page-content">
+            <div class="bg-card-dark p-6 md:p-10 rounded-xl shadow-lg">
+                
+                <!-- TAMPILAN LOGIN (Default) -->
+                <div id="login-section">
+                    <div class="login-container">
+                        <i data-lucide="shield" class="w-16 h-16 text-accent-gold mx-auto mb-4"></i>
+                        <h2 class="text-2xl font-bold text-accent-gold mb-2">Login Admin</h2>
+                        <p class="text-secondary mb-6">Masukkan username dan password untuk mengakses panel admin</p>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label for="username" class="block text-sm font-medium text-primary mb-2 text-left">Username</label>
+                                <input type="text" id="username" class="form-input" placeholder="Masukkan username">
+                            </div>
+                            <div>
+                                <label for="password" class="block text-sm font-medium text-primary mb-2 text-left">Password</label>
+                                <input type="password" id="password" class="form-input" placeholder="Masukkan password">
+                            </div>
+                            <button id="login-btn" class="w-full btn-primary py-3">Login</button>
+                        </div>
+                        
+                        <p class="text-xs text-secondary mt-4">Login Panel Admin</p>
+                    </div>
+                </div>
+
+                <!-- TAMPILAN PANEL ADMIN (Setelah Login) -->
+                <div id="admin-panel" style="display: none;">
+                    <h1 class="text-3xl md:text-4xl font-extrabold text-accent-gold mb-6">Panel Admin</h1>
+                    <p class="text-lg text-secondary mb-8">Kelola konten website BRIGPASNESAGA</p>
+                    
+                    <div class="mb-6 p-4 bg-green-900 bg-opacity-30 rounded-lg">
+                        <p class="text-sm">Status: <span class="text-green-400">Admin Terlogin</span></p>
+                    </div>
+                    
+                    <!-- Form Upload Foto Galeri -->
+                    <div class="admin-form">
+                        <h3 class="text-accent-gold mb-4">Tambah Foto ke Galeri</h3>
+                        <div class="form-group mb-3">
+                            <label class="form-label block mb-2 text-primary">URL Gambar</label>
+                            <input type="text" id="gallery-image" class="form-input" placeholder="https://example.com/image.jpg">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label block mb-2 text-primary">Judul Foto</label>
+                            <input type="text" id="gallery-title" class="form-input" placeholder="Pelantikan Angkatan 12">
+                        </div>
+                        <div class="form-group mb-4">
+                            <label class="form-label block mb-2 text-primary">Deskripsi</label>
+                            <input type="text" id="gallery-description" class="form-input" placeholder="Dokumentasi Kegiatan">
+                        </div>
+                        <button id="add-gallery-item" class="btn-primary">Tambah ke Galeri</button>
+                    </div>
+                    
+                    <!-- Form Upload Lagu -->
+                    <div class="admin-form">
+                        <h3 class="text-accent-gold mb-4">Tambah Lagu ke Playlist</h3>
+                        <div class="form-group mb-3">
+                            <label class="form-label block mb-2 text-primary">URL Lagu</label>
+                            <input type="text" id="song-url" class="form-input" placeholder="https://example.com/song.mp3">
+                        </div>
+                        <div class="form-group mb-4">
+                            <label class="form-label block mb-2 text-primary">Judul Lagu</label>
+                            <input type="text" id="song-title" class="form-input" placeholder="Judul Lagu - Artis">
+                        </div>
+                        <button id="add-song" class="btn-primary">Tambah ke Playlist</button>
+                    </div>
+                    
+                    <!-- Form Tambah Prestasi -->
+                    <div class="admin-form">
+                        <h3 class="text-accent-gold mb-4">Tambah Prestasi</h3>
+                        <div class="form-group mb-3">
+                            <label class="form-label block mb-2 text-primary">Judul Prestasi</label>
+                            <input type="text" id="achievement-title" class="form-input" placeholder="Juara 1 LKBB">
+                        </div>
+                        <div class="form-group mb-4">
+                            <label class="form-label block mb-2 text-primary">Deskripsi Prestasi</label>
+                            <textarea id="achievement-description" class="form-input" rows="3" placeholder="Deskripsi lengkap tentang prestasi yang diraih"></textarea>
+                        </div>
+                        <button id="add-achievement" class="btn-primary">Tambah Prestasi</button>
+                    </div>
+                    
+                    <!-- Form Tambah Struktur Organisasi -->
+                    <div class="admin-form">
+                        <h3 class="text-accent-gold mb-4">Tambah Anggota Struktur</h3>
+                        <div class="form-group mb-3">
+                            <label class="form-label block mb-2 text-primary">Jabatan</label>
+                            <input type="text" id="structure-position" class="form-input" placeholder="Ketua">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label block mb-2 text-primary">Nama</label>
+                            <input type="text" id="structure-name" class="form-input" placeholder="Nama Lengkap">
+                        </div>
+                        <div class="form-group mb-4">
+                            <label class="form-label block mb-2 text-primary">Urutan</label>
+                            <input type="number" id="structure-order" class="form-input" placeholder="1" min="1">
+                        </div>
+                        <button id="add-structure" class="btn-primary">Tambah ke Struktur</button>
+                    </div>
+                    
+                    <!-- Tombol Logout -->
+                    <div class="mt-6 p-4 border border-accent-crimson rounded-lg text-center">
+                        <button id="logout-btn" class="btn-secondary">Logout</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- NAVIGASI BAWAH -->
+    <nav class="bottom-nav">
+        <div class="flex justify-around">
+            <div class="nav-item active" data-page="home">
+                <i data-lucide="home" class="nav-icon"></i>
+                <span class="nav-label">Beranda</span>
+            </div>
+            <div class="nav-item" data-page="galeri">
+                <i data-lucide="image" class="nav-icon"></i>
+                <span class="nav-label">Galeri</span>
+            </div>
+            <div class="nav-item" data-page="prestasi">
+                <i data-lucide="award" class="nav-icon"></i>
+                <span class="nav-label">Prestasi</span>
+            </div>
+            <div class="nav-item" data-page="struktur">
+                <i data-lucide="users" class="nav-icon"></i>
+                <span class="nav-label">Struktur</span>
+            </div>
+            <div class="nav-item" data-page="masukan">
+                <i data-lucide="send" class="nav-icon"></i>
+                <span class="nav-label">Masukan</span>
+            </div>
+            <div class="nav-item" data-page="admin">
+                <i data-lucide="settings" class="nav-icon"></i>
+                <span class="nav-label">Admin</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- FOOTER -->
+    <footer class="footer-dark text-white mt-12 py-8 border-t">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="flex justify-center space-x-6 mb-4">
+                <a href="https://www.instagram.com/brigpas_nesaga?igsh=MWQ1eTFhN25xaW5wcg==" target="_blank" class="text-secondary hover:text-accent-gold transition">
+                    <i data-lucide="instagram" class="w-7 h-7"></i>
+                </a>
+                <a href="https://www.tiktok.com/@brigpas_nesaga" target="_blank" class="text-secondary hover:text-accent-gold transition">
+                    <i data-lucide="zap" class="w-7 h-7"></i>
+                </a>
+                <a href="https://whatsapp.com/channel/0029VaoTsho5Ui2fyXa1e42H" target="_blank" class="text-secondary hover:text-accent-gold transition">
+    <i data-lucide="message-circle" class="w-7 h-7"></i>
+</a>
+            </div>
+     
+            <p class="text-sm text-accent-gold">&copy; 2025 BRIGPASNESAGA - SMP Negeri 1 Gabuswetan.</p>
+            <p class="text-xs text-secondary mt-1">Dibuat Untuk Kepentingan Organisasi</p>
+        </div>
+    </footer>
+
+    <!-- AUDIO PLAYER -->
+    <audio id="background-audio"></audio>
+
+    <div class="music-control-card">
+        <button id="audio-toggle-btn" class="w-12 h-12 rounded-full bg-accent-crimson text-white shadow-xl hover:bg-red-700 transition duration-300 flex items-center justify-center">
+            <i data-lucide="play" class="w-6 h-6"></i>
+        </button>
+    </div>
+    
+    <!-- MODAL GALERI -->
+    <div id="image-modal" class="fixed inset-0 hidden items-center justify-center z-50 bg-black bg-opacity-80">
+        <div class="relative p-4 modal-content rounded-lg shadow-2xl max-w-4xl max-h-[90vh] image-modal">
+            <button id="close-modal-btn" class="absolute top-2 right-2 p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-black transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <img id="modal-image" src="" alt="Gambar Galeri Besar" class="max-w-full max-h-[80vh] rounded-lg object-contain border border-border-color">
+            <p id="modal-caption" class="text-center mt-3 text-base"></p>
+        </div>
+    </div>
+
+    <!-- MODAL PLAYLIST -->
+    <div id="playlist-modal" class="fixed inset-0 hidden items-center justify-center z-[100] modal-backdrop opacity-0">
+        <div class="modal-content w-11/12 max-w-md bg-card-dark p-6 rounded-xl shadow-2xl playlist-modal">
+            <div class="flex justify-between items-center border-b border-border-color pb-3 mb-4">
+                <h2 class="text-xl font-bold text-accent-gold flex items-center">
+                    <i data-lucide="list-music" class="w-6 h-6 mr-2"></i> Daftar Putar
+                </h2>
+                <button id="close-playlist-btn" class="p-1 rounded-md hover:bg-card-dark-highlight text-primary">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div id="playlist-container" class="space-y-2 max-h-80 overflow-y-auto pr-2">
+                <!-- List lagu akan di-generate oleh JavaScript di sini -->
+            </div>
+            
+            <p class="text-center text-xs text-secondary mt-4">Klik judul lagu untuk memutar.</p>
+        </div>
+    </div>
+
+    <!-- SCRIPT JAVASCRIPT -->
+    <script>
+        // Inisialisasi Lucide Icons
+        lucide.createIcons();
+
+        // ===========================================
+        // KONFIGURASI FIREBASE
+        // ===========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDERAxtf4eQEuyh--1NgyNvzulBBsNnJA",
+            authDomain: "brigpasnesaga-a31a6.firebaseapp.com",
+            projectId: "brigpasnesaga-a31a6",
+            storageBucket: "brigpasnesaga-a31a6.firebasestorage.app",
+            messagingSenderId: "666499505119",
+            appId: "1:666499505119:web:70015495924624604c826a"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ===========================================
+        // DATA DEFAULT - DENGAN URUTAN YANG TEPAT
+        // ===========================================
+        const defaultGallery = [
+            { src: "https://files.catbox.moe/ao0fg8.jpg", title: "Pelantikan Angkatan 12 Capas Ke Paskibra", description: "Dokumentasi Kegiatan." },
+            { src: "https://files.catbox.moe/0qi2j4.jpg", title: "Latihan Rutin", description: "Foto Setelah Latihan." },
+            { src: "https://files.catbox.moe/5qga8z.jpg", title: "PENYERAHAN PIALA LKBB SPECTRA", description: "Pasukan A Dan B." },
+            { src: "https://files.catbox.moe/py84p2.jpg", title: "DP FOTO LKBB SPECTRA", description: "Pasukan A." },
+            { src: "https://files.catbox.moe/fxa8qz.jpg", title: "DP FOTO LKBB SPECTRA", description: "Pasukan B." },
+            { src: "https://files.catbox.moe/2qpvf0.jpg", title: "DOKUMENTASI LATGAB", description: "LATIHAN GABUNGAN WITH NEGATAN & NEGAYA" },
+            { src: "https://files.catbox.moe/9290dk.jpg", title: "Demonstrasi Eskul", description: "Pasukan A Dan B." }
+        ];
+
+        const defaultSongs = [
+            { title: ".Feast - Nina", url: "https://files.catbox.moe/wm7ye2.webm" },
+            { title: ".Feast - Evaluasi", url: "https://files.catbox.moe/0o4yha.webm" },
+            { title: "Everything u are", url: "https://files.catbox.moe/v2gxlu.webm" },
+            { title: "Bergema Sampai Selamanya", url: "https://files.catbox.moe/fytdzv.webm" }
+        ];
+
+        const defaultAchievements = [
+            { title: "Juara Mula 2 - LKBB SPECTRA", description: "Lomba Keterampilan Baris-Berbaris tingkat Provinsi yang diselenggarakan oleh Paskibra SMK PUI JATIBARANG." },
+            { title: "Juara Perintis 1 - LKBB SPECTRA", description: "Lomba Keterampilan Baris-Berbaris tingkat Provinsi yang diselenggarakan oleh Paskibra SMK PUI JATIBARANG." },
+            { title: "Juara Votting Qris 3 - LKBB SPECTRA", description: "Lomba Keterampilan Baris-Berbaris tingkat Provinsi yang diselenggarakan oleh Paskibra SMK PUI JATIBARANG." },
+            { title: "Juara Ter Antusias - LKBB SPECTRA", description: "Lomba Keterampilan Baris-Berbaris tingkat Provinsi yang diselenggarakan oleh Paskibra SMK PUI JATIBARANG." }
+        ];
+
+        const defaultStructure = [
+            { position: "Pembina Utama", name: "Rohsidin, M.Pd", order: 1 },
+            { position: "Pembina Putra", name: "Muhammad Jamal Baligh, S.Pd", order: 2 },
+            { position: "Pembina Putri", name: "Meisfa Ayu Ningtyas, S.Pd", order: 3 },
+            { position: "Pelatih", name: "Annazlu Al Musthofa", order: 4 },
+            { position: "Komsat (Komandan Satu)", name: "Soni", order: 5 },
+            { position: "Wakomsat (Wakil Komandan Satu)", name: "Naeva", order: 6 },
+            { position: "Sekretaris", name: "Meisya, Aini", order: 7 },
+            { position: "Bendahara", name: "Alya, Alodia", order: 8 },
+            { position: "Korlap (Koordinator Lapangan)", name: "Ilham, Kartika", order: 9 },
+            { position: "Kormat (Koordinator Materi)", name: "Adel, Reva", order: 10 },
+            { position: "Keagamaan", name: "Raihan, Ananda", order: 11 },
+            { position: "Kebersihan", name: "Niko, Aura, Chantika", order: 12 },
+            { position: "Kesehatan", name: "Debby, Winda, Wilda", order: 13 },
+            { position: "Humas (Hubungan Masyarakat)", name: "Dara, Yunita, Afifah", order: 14 },
+            { position: "Dokumentasi", name: "Riyan, Fitri, Chantya, Bilqis, Wilis", order: 15 }
+        ];
+
+        // ===========================================
+        // VARIABEL GLOBAL
+        // ===========================================
+        let songList = [];
+        let isAdminLoggedIn = false;
+        let isPlaying = false;
+        let currentSongIndex = 0;
+
+        // ===========================================
+        // FUNGSI FIREBASE - LOAD DATA (DIPERBAIKI)
+        // ===========================================
+        async function loadDataFromFirebase() {
+            try {
+                // Load gallery
+                const gallerySnapshot = await db.collection('gallery').orderBy('timestamp', 'desc').get();
+                let galleryData = [];
+                if (!gallerySnapshot.empty) {
+                    galleryData = gallerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } else {
+                    galleryData = defaultGallery;
+                }
+                
+                // Load songs
+                const songsSnapshot = await db.collection('songs').orderBy('timestamp', 'desc').get();
+                if (!songsSnapshot.empty) {
+                    songList = songsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } else {
+                    songList = defaultSongs;
+                }
+                
+                // Load achievements
+                const achievementsSnapshot = await db.collection('achievements').orderBy('timestamp', 'desc').get();
+                let achievementsData = [];
+                if (!achievementsSnapshot.empty) {
+                    achievementsData = achievementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } else {
+                    achievementsData = defaultAchievements;
+                }
+                
+                // Load structure - DENGAN PENGURUTAN YANG TEPAT
+                const structureSnapshot = await db.collection('structure').orderBy('order', 'asc').get();
+                let structureData = [];
+                if (!structureSnapshot.empty) {
+                    structureData = structureSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } else {
+                    structureData = defaultStructure;
+                }
+                
+                // Render data
+                renderGallery(galleryData);
+                renderAchievements(achievementsData);
+                renderStructure(structureData);
+                
+                return {
+                    gallery: galleryData,
+                    songs: songList,
+                    achievements: achievementsData,
+                    structure: structureData
+                };
+            } catch (error) {
+                console.error("Error loading data from Firebase:", error);
+                // Fallback ke data default
+                renderGallery(defaultGallery);
+                renderAchievements(defaultAchievements);
+                renderStructure(defaultStructure);
+                songList = defaultSongs;
+                
+                return null;
+            }
+        }
+
+        // ===========================================
+        // FUNGSI FIREBASE - UPLOAD DATA
+        // ===========================================
+        async function addGalleryItemToFirebase(imageUrl, title, description) {
+            try {
+                await db.collection('gallery').add({
+                    src: imageUrl,
+                    title: title,
+                    description: description,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return true;
+            } catch (error) {
+                console.error("Error adding gallery item:", error);
+                return false;
+            }
+        }
+
+        async function addSongToFirebase(songUrl, title) {
+            try {
+                await db.collection('songs').add({
+                    url: songUrl,
+                    title: title,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return true;
+            } catch (error) {
+                console.error("Error adding song:", error);
+                return false;
+            }
+        }
+
+        async function addAchievementToFirebase(title, description) {
+            try {
+                await db.collection('achievements').add({
+                    title: title,
+                    description: description,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return true;
+            } catch (error) {
+                console.error("Error adding achievement:", error);
+                return false;
+            }
+        }
+
+        async function addStructureToFirebase(position, name, order) {
+            try {
+                await db.collection('structure').add({
+                    position: position,
+                    name: name,
+                    order: parseInt(order),
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return true;
+            } catch (error) {
+                console.error("Error adding structure item:", error);
+                return false;
+            }
+        }
+
+        // ===========================================
+        // FUNGSI UTAMA
+        // ===========================================
+        function renderGallery(galleryData) {
+            const container = document.getElementById('gallery-container');
+            container.innerHTML = '';
+            galleryData.forEach(item => {
+                const galleryItem = document.createElement('div');
+                galleryItem.className = 'gallery-item overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 bg-card-dark-highlight cursor-pointer';
+                galleryItem.innerHTML = `
+                    <img src="${item.src}" alt="${item.title}" class="w-full h-64 object-cover transform hover:scale-105 transition-transform duration-300"
+                         onerror="this.onerror=null; this.src='https://placehold.co/600x400/3A4557/E0E6F0?text=FOTO+GAGAL+DIMUAT'">
+                    <div class="p-4 border-t border-border-color">
+                        <h3 class="font-semibold text-primary">${item.title}</h3>
+                        <p class="text-sm text-secondary">${item.description}</p>
+                    </div>
+                `;
+                galleryItem.addEventListener('click', () => openModal(item.src, item.title));
+                container.appendChild(galleryItem);
+            });
+        }
+
+        function renderAchievements(achievementsData) {
+            const container = document.getElementById('achievements-container');
+            container.innerHTML = '';
+            achievementsData.forEach(item => {
+                const achievementItem = document.createElement('div');
+                achievementItem.className = 'flex items-start space-x-4 p-4 border border-border-color rounded-lg bg-card-dark-highlight';
+                achievementItem.innerHTML = `
+                    <i data-lucide="award" class="w-10 h-10 text-accent-gold"></i>
+                    <div>
+                        <h3 class="text-xl font-semibold text-primary">${item.title}</h3>
+                        <p class="text-secondary">${item.description}</p>
+                    </div>
+                `;
+                container.appendChild(achievementItem);
+            });
+            lucide.createIcons();
+        }
+
+        function renderStructure(structureData) {
+            const container = document.getElementById('structure-container');
+            container.innerHTML = '';
+            
+            // Urutkan data berdasarkan field 'order'
+            structureData.sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+            structureData.forEach(item => {
+                const structureItem = document.createElement('div');
+                
+                // Tentukan apakah ini jabatan penting (untuk styling khusus)
+                const isImportant = item.position.includes('Pembina') || item.position.includes('Pelatih') || 
+                                  item.position.includes('Komsat') || item.position.includes('Wakomsat');
+                
+                if (isImportant) {
+                    structureItem.className = 'structure-highlight';
+                } else {
+                    structureItem.className = 'structure-item';
+                }
+                
+                structureItem.innerHTML = `
+                    <div class="structure-position text-accent-gold">${item.position}</div>
+                    <div class="structure-name">${item.name}</div>
+                `;
+                container.appendChild(structureItem);
+            });
+        }
+
+        // ===========================================
+        // FUNGSI PLAYLIST MODAL
+        // ===========================================
+        function openPlaylistModal() {
+            renderPlaylist();
+            const playlistModal = document.getElementById('playlist-modal');
+            playlistModal.classList.remove('hidden');
+            playlistModal.classList.add('flex');
+            setTimeout(() => {
+                playlistModal.style.opacity = 1;
+            }, 10);
+        }
+
+        function closePlaylistModal() {
+            const playlistModal = document.getElementById('playlist-modal');
+            playlistModal.style.opacity = 0;
+            setTimeout(() => {
+                playlistModal.classList.remove('flex');
+                playlistModal.classList.add('hidden');
+            }, 300);
+        }
+        
+        function renderPlaylist() {
+            const playlistContainer = document.getElementById('playlist-container');
+            playlistContainer.innerHTML = '';
+            
+            songList.forEach((song, index) => {
+                const isActive = index === currentSongIndex;
+                const listItem = document.createElement('div');
+                listItem.className = `playlist-item p-3 rounded-lg cursor-pointer transition duration-200 flex items-center ${
+                    isActive ? 'active' : 'hover:bg-card-dark-highlight'
+                }`;
+                listItem.innerHTML = `
+                    ${isActive ? '<i data-lucide="volume-2" class="w-4 h-4 mr-3"></i>' : '<i data-lucide="music" class="w-4 h-4 mr-3"></i>'}
+                    <span class="flex-1">${index + 1}. ${song.title}</span>
+                `;
+                listItem.setAttribute('data-index', index);
+                
+                listItem.addEventListener('click', () => {
+                    if (index !== currentSongIndex) {
+                        currentSongIndex = index;
+                        const audio = document.getElementById('background-audio');
+                        audio.src = songList[currentSongIndex].url;
+                        
+                        if (isPlaying) {
+                            audio.play();
+                        }
+                        
+                        renderPlaylist();
+                        updateAudioToggleButton();
+                    }
+                    closePlaylistModal();
+                });
+                
+                playlistContainer.appendChild(listItem);
+            });
+            lucide.createIcons();
+        }
+
+        // ===========================================
+        // FUNGSI BANTUAN
+        // ===========================================
+        function alertMessage(message, type = "success") {
+            const alert = document.createElement('div');
+            const bgColor = type === "error" ? "bg-red-500" : "bg-green-500";
+            alert.className = `fixed top-4 left-1/2 transform -translate-x-1/2 p-4 ${bgColor} text-white rounded-lg shadow-xl z-50`;
+            alert.textContent = message;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        }
+
+        function openModal(src, caption) {
+            document.getElementById('modal-image').src = src;
+            document.getElementById('modal-caption').textContent = caption;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+        }
+
+        function updateAudioToggleButton() {
+            const audioToggleBtn = document.getElementById('audio-toggle-btn');
+            if (isPlaying) {
+                audioToggleBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>';
+            } else {
+                audioToggleBtn.innerHTML = '<i data-lucide="play" class="w-6 h-6"></i>';
+            }
+            lucide.createIcons();
+        }
+
+        function loginAdmin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === "BRIGPASNESAGA" && password === "ADMINBRIGPAS") {
+                isAdminLoggedIn = true;
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                alertMessage("Login berhasil! Selamat datang di panel admin.");
+            } else {
+                alertMessage("Username atau password salah!", "error");
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            alertMessage("Anda telah logout.");
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            document.getElementById(pageId).classList.add('active');
+            document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+            
+            // Reset form admin saat pindah halaman
+            if (pageId !== 'admin') {
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+            }
+        }
+
+        // ===========================================
+        // FUNGSI TOGGLE DARK/LIGHT MODE
+        // ===========================================
+        function toggleTheme() {
+            const body = document.body;
+            const header = document.querySelector('header');
+            const footer = document.querySelector('footer');
+            const isLightMode = body.classList.contains('light-mode');
+            
+            if (isLightMode) {
+                body.classList.remove('light-mode');
+                header.classList.remove('header-light');
+                header.classList.add('header-dark');
+                footer.classList.remove('footer-light');
+                footer.classList.add('footer-dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.add('light-mode');
+                header.classList.remove('header-dark');
+                header.classList.add('header-light');
+                footer.classList.remove('footer-dark');
+                footer.classList.add('footer-light');
+                localStorage.setItem('theme', 'light');
+            }
+            
+            // Update ikon toggle
+            updateThemeToggleIcon();
+        }
+
+        function updateThemeToggleIcon() {
+            const isLightMode = document.body.classList.contains('light-mode');
+            const toggle = document.getElementById('theme-toggle');
+            
+            if (toggle) {
+                toggle.checked = isLightMode;
+            }
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const header = document.querySelector('header');
+            const footer = document.querySelector('footer');
+            
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                header.classList.remove('header-dark');
+                header.classList.add('header-light');
+                footer.classList.remove('footer-dark');
+                footer.classList.add('footer-light');
+            } else {
+                document.body.classList.remove('light-mode');
+                header.classList.remove('header-light');
+                header.classList.add('header-dark');
+                footer.classList.remove('footer-light');
+                footer.classList.add('footer-dark');
+            }
+            updateThemeToggleIcon();
+        }
+
+        // ===========================================
+        // EVENT LISTENERS
+        // ===========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inisialisasi tema
+            initTheme();
+            
+            // Load data dari Firebase
+            loadDataFromFirebase();
+            
+            // Toggle tema
+            document.getElementById('theme-toggle').addEventListener('change', toggleTheme);
+            
+            // Navigasi
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    showPage(item.getAttribute('data-page'));
+                });
+            });
+            
+            // Modal
+            document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+            document.getElementById('image-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('image-modal')) closeModal();
+            });
+            
+            // Playlist Modal
+            const playlistModal = document.getElementById('playlist-modal');
+            const playlistContainer = document.getElementById('playlist-container');
+            const closePlaylistBtn = document.getElementById('close-playlist-btn');
+            
+            document.getElementById('playlist-open-btn').addEventListener('click', openPlaylistModal);
+            closePlaylistBtn.addEventListener('click', closePlaylistModal);
+            playlistModal.addEventListener('click', (e) => {
+                if (e.target === playlistModal) {
+                    closePlaylistModal();
+                }
+            });
+            
+            // Login
+            document.getElementById('login-btn').addEventListener('click', loginAdmin);
+            document.getElementById('logout-btn').addEventListener('click', logoutAdmin);
+            
+            // Admin functions dengan Firebase
+            document.getElementById('add-gallery-item').addEventListener('click', async function() {
+                const imageUrl = document.getElementById('gallery-image').value;
+                const title = document.getElementById('gallery-title').value;
+                const description = document.getElementById('gallery-description').value;
+                
+                if (!imageUrl || !title) {
+                    alertMessage("URL gambar dan judul harus diisi!", "error");
+                    return;
+                }
+                
+                try {
+                    const success = await addGalleryItemToFirebase(imageUrl, title, description);
+                    
+                    if (success) {
+                        alertMessage("Foto berhasil ditambahkan ke galeri!");
+                        // Reset form
+                        document.getElementById('gallery-image').value = '';
+                        document.getElementById('gallery-title').value = '';
+                        document.getElementById('gallery-description').value = '';
+                        // Refresh data
+                        loadDataFromFirebase();
+                    } else {
+                        alertMessage("Gagal menambahkan foto. Coba lagi.", "error");
+                    }
+                } catch (error) {
+                    alertMessage("Error: " + error.message, "error");
+                }
+            });
+            
+            document.getElementById('add-song').addEventListener('click', async function() {
+                const songUrl = document.getElementById('song-url').value;
+                const title = document.getElementById('song-title').value;
+                
+                if (!songUrl || !title) {
+                    alertMessage("URL lagu dan judul harus diisi!", "error");
+                    return;
+                }
+                
+                try {
+                    const success = await addSongToFirebase(songUrl, title);
+                    
+                    if (success) {
+                        alertMessage("Lagu berhasil ditambahkan ke playlist!");
+                        // Reset form
+                        document.getElementById('song-url').value = '';
+                        document.getElementById('song-title').value = '';
+                        // Refresh data
+                        loadDataFromFirebase();
+                    } else {
+                        alertMessage("Gagal menambahkan lagu. Coba lagi.", "error");
+                        }
+                } catch (error) {
+                    alertMessage("Error: " + error.message, "error");
+                }
+            });
+            
+            document.getElementById('add-achievement').addEventListener('click', async function() {
+                const title = document.getElementById('achievement-title').value;
+                const description = document.getElementById('achievement-description').value;
+                
+                if (!title || !description) {
+                    alertMessage("Judul dan deskripsi prestasi harus diisi!", "error");
+                    return;
+                }
+                
+                try {
+                    const success = await addAchievementToFirebase(title, description);
+                    
+                    if (success) {
+                        alertMessage("Prestasi berhasil ditambahkan!");
+                        // Reset form
+                        document.getElementById('achievement-title').value = '';
+                        document.getElementById('achievement-description').value = '';
+                        // Refresh data
+                        loadDataFromFirebase();
+                    } else {
+                        alertMessage("Gagal menambahkan prestasi. Coba lagi.", "error");
+                    }
+                } catch (error) {
+                    alertMessage("Error: " + error.message, "error");
+                }
+            });
+            
+            document.getElementById('add-structure').addEventListener('click', async function() {
+                const position = document.getElementById('structure-position').value;
+                const name = document.getElementById('structure-name').value;
+                const order = document.getElementById('structure-order').value;
+                
+                if (!position || !name || !order) {
+                    alertMessage("Semua field harus diisi!", "error");
+                    return;
+                }
+                
+                try {
+                    const success = await addStructureToFirebase(position, name, order);
+                    
+                    if (success) {
+                        alertMessage("Anggota struktur berhasil ditambahkan!");
+                        // Reset form
+                        document.getElementById('structure-position').value = '';
+                        document.getElementById('structure-name').value = '';
+                        document.getElementById('structure-order').value = '';
+                        // Refresh data
+                        loadDataFromFirebase();
+                    } else {
+                        alertMessage("Gagal menambahkan anggota struktur. Coba lagi.", "error");
+                    }
+                } catch (error) {
+                    alertMessage("Error: " + error.message, "error");
+                }
+            });
+            
+            // Audio player
+            const audio = document.getElementById('background-audio');
+            const audioToggleBtn = document.getElementById('audio-toggle-btn');
+            
+            audioToggleBtn.addEventListener('click', function() {
+                if (songList.length === 0) {
+                    alertMessage("Tidak ada lagu dalam playlist!", "error");
+                    return;
+                }
+                
+                if (isPlaying) {
+                    audio.pause();
+                    isPlaying = false;
+                } else {
+                    if (!audio.src || audio.src !== songList[currentSongIndex].url) {
+                        audio.src = songList[currentSongIndex].url;
+                    }
+                    audio.play();
+                    isPlaying = true;
+                }
+                updateAudioToggleButton();
+            });
+            
+            // Auto play next track when current ends
+            audio.addEventListener('ended', function() {
+                currentSongIndex = (currentSongIndex + 1) % songList.length;
+                audio.src = songList[currentSongIndex].url;
+                if (isPlaying) {
+                    audio.play();
+                }
+                renderPlaylist();
+            });
+            
+            // WhatsApp feedback
+            document.getElementById('send-whatsapp-btn').addEventListener('click', function() {
+                const feedback = document.getElementById('feedback-input').value;
+                if (!feedback) {
+                    alertMessage("Mohon isi masukan terlebih dahulu!", "error");
+                    return;
+                }
+                
+                const message = `*MASUKAN UNTUK BRIGPASNESAGA*\n\n${feedback}`;
+                const url = `https://wa.me/6283159696918?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+                alertMessage("Membuka WhatsApp...");
+            });
+        });
+    </script>
+</body>
+</html>
