@@ -14,6 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
     <style>
+        /* CSS yang sama seperti sebelumnya */
         :root {
             --bg-primary: #1C2331;
             --bg-secondary: #283241;
@@ -156,6 +157,25 @@
             background-color: var(--bg-tertiary);
             color: var(--text-primary);
             padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-edit {
+            background-color: var(--accent-gold);
+            color: var(--text-darker);
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .btn-delete {
+            background-color: #DC2626;
+            color: white;
+            padding: 8px 16px;
             border-radius: 6px;
             border: none;
             cursor: pointer;
@@ -304,6 +324,17 @@
         
         .light-mode .image-modal img {
             border-color: var(--border-color);
+        }
+
+        /* Admin Action Buttons */
+        .admin-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .gallery-item {
+            position: relative;
         }
     </style>
 </head>
@@ -624,6 +655,27 @@
         </div>
     </div>
 
+    <!-- MODAL KONFIRMASI HAPUS -->
+    <div id="delete-confirm-modal" class="fixed inset-0 hidden items-center justify-center z-[100] modal-backdrop opacity-0">
+        <div class="modal-content w-11/12 max-w-md bg-card-dark p-6 rounded-xl shadow-2xl">
+            <div class="flex justify-between items-center border-b border-border-color pb-3 mb-4">
+                <h2 class="text-xl font-bold text-accent-gold flex items-center">
+                    <i data-lucide="alert-triangle" class="w-6 h-6 mr-2 text-yellow-500"></i> Konfirmasi Hapus
+                </h2>
+                <button id="close-delete-modal-btn" class="p-1 rounded-md hover:bg-card-dark-highlight text-primary">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <p class="text-primary mb-6" id="delete-confirm-message">Apakah Anda yakin ingin menghapus item ini?</p>
+            
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-delete-btn" class="btn-secondary">Batal</button>
+                <button id="confirm-delete-btn" class="btn-delete">Hapus</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SCRIPT JAVASCRIPT -->
     <script>
         // Inisialisasi Lucide Icons
@@ -694,9 +746,11 @@
         // VARIABEL GLOBAL
         // ===========================================
         let songList = [];
-        let isAdminLoggedIn = false;
+        let isAdminLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
         let isPlaying = false;
         let currentSongIndex = 0;
+        let deleteCallback = null;
+        let currentEditingItem = null;
 
         // ===========================================
         // FUNGSI FIREBASE - LOAD DATA (DIPERBAIKI)
@@ -779,6 +833,30 @@
             }
         }
 
+        async function updateGalleryItemInFirebase(id, imageUrl, title, description) {
+            try {
+                await db.collection('gallery').doc(id).update({
+                    src: imageUrl,
+                    title: title,
+                    description: description
+                });
+                return true;
+            } catch (error) {
+                console.error("Error updating gallery item:", error);
+                return false;
+            }
+        }
+
+        async function deleteGalleryItemFromFirebase(id) {
+            try {
+                await db.collection('gallery').doc(id).delete();
+                return true;
+            } catch (error) {
+                console.error("Error deleting gallery item:", error);
+                return false;
+            }
+        }
+
         async function addSongToFirebase(songUrl, title) {
             try {
                 await db.collection('songs').add({
@@ -789,6 +867,29 @@
                 return true;
             } catch (error) {
                 console.error("Error adding song:", error);
+                return false;
+            }
+        }
+
+        async function updateSongInFirebase(id, songUrl, title) {
+            try {
+                await db.collection('songs').doc(id).update({
+                    url: songUrl,
+                    title: title
+                });
+                return true;
+            } catch (error) {
+                console.error("Error updating song:", error);
+                return false;
+            }
+        }
+
+        async function deleteSongFromFirebase(id) {
+            try {
+                await db.collection('songs').doc(id).delete();
+                return true;
+            } catch (error) {
+                console.error("Error deleting song:", error);
                 return false;
             }
         }
@@ -807,6 +908,29 @@
             }
         }
 
+        async function updateAchievementInFirebase(id, title, description) {
+            try {
+                await db.collection('achievements').doc(id).update({
+                    title: title,
+                    description: description
+                });
+                return true;
+            } catch (error) {
+                console.error("Error updating achievement:", error);
+                return false;
+            }
+        }
+
+        async function deleteAchievementFromFirebase(id) {
+            try {
+                await db.collection('achievements').doc(id).delete();
+                return true;
+            } catch (error) {
+                console.error("Error deleting achievement:", error);
+                return false;
+            }
+        }
+
         async function addStructureToFirebase(position, name, order) {
             try {
                 await db.collection('structure').add({
@@ -818,6 +942,30 @@
                 return true;
             } catch (error) {
                 console.error("Error adding structure item:", error);
+                return false;
+            }
+        }
+
+        async function updateStructureInFirebase(id, position, name, order) {
+            try {
+                await db.collection('structure').doc(id).update({
+                    position: position,
+                    name: name,
+                    order: parseInt(order)
+                });
+                return true;
+            } catch (error) {
+                console.error("Error updating structure item:", error);
+                return false;
+            }
+        }
+
+        async function deleteStructureFromFirebase(id) {
+            try {
+                await db.collection('structure').doc(id).delete();
+                return true;
+            } catch (error) {
+                console.error("Error deleting structure item:", error);
                 return false;
             }
         }
@@ -839,9 +987,40 @@
                         <p class="text-sm text-secondary">${item.description}</p>
                     </div>
                 `;
+                
+                // Tambahkan tombol edit/hapus jika admin login
+                if (isAdminLoggedIn) {
+                    const adminActions = document.createElement('div');
+                    adminActions.className = 'admin-actions';
+                    adminActions.innerHTML = `
+                        <button class="btn-edit edit-gallery-btn" data-id="${item.id}">Edit</button>
+                        <button class="btn-delete delete-gallery-btn" data-id="${item.id}">Hapus</button>
+                    `;
+                    galleryItem.appendChild(adminActions);
+                }
+                
                 galleryItem.addEventListener('click', () => openModal(item.src, item.title));
                 container.appendChild(galleryItem);
             });
+            
+            // Tambahkan event listener untuk tombol edit dan hapus
+            if (isAdminLoggedIn) {
+                document.querySelectorAll('.edit-gallery-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.getAttribute('data-id');
+                        editGalleryItem(id, galleryData);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-gallery-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.getAttribute('data-id');
+                        showDeleteConfirmation('foto galeri', () => deleteGalleryItem(id));
+                    });
+                });
+            }
         }
 
         function renderAchievements(achievementsData) {
@@ -852,13 +1031,45 @@
                 achievementItem.className = 'flex items-start space-x-4 p-4 border border-border-color rounded-lg bg-card-dark-highlight';
                 achievementItem.innerHTML = `
                     <i data-lucide="award" class="w-10 h-10 text-accent-gold"></i>
-                    <div>
+                    <div class="flex-1">
                         <h3 class="text-xl font-semibold text-primary">${item.title}</h3>
                         <p class="text-secondary">${item.description}</p>
                     </div>
                 `;
+                
+                // Tambahkan tombol edit/hapus jika admin login
+                if (isAdminLoggedIn) {
+                    const adminActions = document.createElement('div');
+                    adminActions.className = 'admin-actions';
+                    adminActions.innerHTML = `
+                        <button class="btn-edit edit-achievement-btn" data-id="${item.id}">Edit</button>
+                        <button class="btn-delete delete-achievement-btn" data-id="${item.id}">Hapus</button>
+                    `;
+                    achievementItem.appendChild(adminActions);
+                }
+                
                 container.appendChild(achievementItem);
             });
+            
+            // Tambahkan event listener untuk tombol edit dan hapus
+            if (isAdminLoggedIn) {
+                document.querySelectorAll('.edit-achievement-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.getAttribute('data-id');
+                        editAchievementItem(id, achievementsData);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-achievement-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.getAttribute('data-id');
+                        showDeleteConfirmation('prestasi', () => deleteAchievementItem(id));
+                    });
+                });
+            }
+            
             lucide.createIcons();
         }
 
@@ -886,8 +1097,231 @@
                     <div class="structure-position text-accent-gold">${item.position}</div>
                     <div class="structure-name">${item.name}</div>
                 `;
+                
+                // Tambahkan tombol edit/hapus jika admin login
+                if (isAdminLoggedIn) {
+                    const adminActions = document.createElement('div');
+                    adminActions.className = 'admin-actions';
+                    adminActions.innerHTML = `
+                        <button class="btn-edit edit-structure-btn" data-id="${item.id}">Edit</button>
+                        <button class="btn-delete delete-structure-btn" data-id="${item.id}">Hapus</button>
+                    `;
+                    structureItem.appendChild(adminActions);
+                }
+                
                 container.appendChild(structureItem);
             });
+            
+            // Tambahkan event listener untuk tombol edit dan hapus
+            if (isAdminLoggedIn) {
+                document.querySelectorAll('.edit-structure-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.getAttribute('data-id');
+                        editStructureItem(id, structureData);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-structure-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.getAttribute('data-id');
+                        showDeleteConfirmation('anggota struktur', () => deleteStructureItem(id));
+                    });
+                });
+            }
+        }
+
+        // ===========================================
+        // FUNGSI EDIT DATA
+        // ===========================================
+        function editGalleryItem(id, galleryData) {
+            const item = galleryData.find(i => i.id === id);
+            if (!item) return;
+            
+            // Isi form dengan data yang ada
+            document.getElementById('gallery-image').value = item.src;
+            document.getElementById('gallery-title').value = item.title;
+            document.getElementById('gallery-description').value = item.description;
+            
+            // Ubah tombol tambah menjadi update
+            const addButton = document.getElementById('add-gallery-item');
+            addButton.textContent = 'Update Foto';
+            addButton.onclick = async function() {
+                const imageUrl = document.getElementById('gallery-image').value;
+                const title = document.getElementById('gallery-title').value;
+                const description = document.getElementById('gallery-description').value;
+                
+                if (!imageUrl || !title) {
+                    alertMessage("URL gambar dan judul harus diisi!", "error");
+                    return;
+                }
+                
+                try {
+                    const success = await updateGalleryItemInFirebase(id, imageUrl, title, description);
+                    
+                    if (success) {
+                        alertMessage("Foto berhasil diupdate!");
+                        // Reset form
+                        document.getElementById('gallery-image').value = '';
+                        document.getElementById('gallery-title').value = '';
+                        document.getElementById('gallery-description').value = '';
+                        // Kembalikan tombol ke mode tambah
+                        addButton.textContent = 'Tambah ke Galeri';
+                        addButton.onclick = addGalleryItemHandler;
+                        // Refresh data
+                        loadDataFromFirebase();
+                    } else {
+                        alertMessage("Gagal mengupdate foto. Coba lagi.", "error");
+                    }
+                } catch (error) {
+                    alertMessage("Error: " + error.message, "error");
+                }
+            };
+            
+            // Scroll ke form
+            document.getElementById('admin').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function editAchievementItem(id, achievementsData) {
+            const item = achievementsData.find(i => i.id === id);
+            if (!item) return;
+            
+            // Isi form dengan data yang ada
+            document.getElementById('achievement-title').value = item.title;
+            document.getElementById('achievement-description').value = item.description;
+            
+            // Ubah tombol tambah menjadi update
+            const addButton = document.getElementById('add-achievement');
+            addButton.textContent = 'Update Prestasi';
+            addButton.onclick = async function() {
+                const title = document.getElementById('achievement-title').value;
+                const description = document.getElementById('achievement-description').value;
+                
+                if (!title || !description) {
+                    alertMessage("Judul dan deskripsi prestasi harus diisi!", "error");
+                    return;
+                }
+                
+                try {
+                    const success = await updateAchievementInFirebase(id, title, description);
+                    
+                    if (success) {
+                        alertMessage("Prestasi berhasil diupdate!");
+                        // Reset form
+                        document.getElementById('achievement-title').value = '';
+                        document.getElementById('achievement-description').value = '';
+                        // Kembalikan tombol ke mode tambah
+                        addButton.textContent = 'Tambah Prestasi';
+                        addButton.onclick = addAchievementHandler;
+                        // Refresh data
+                        loadDataFromFirebase();
+                    } else {
+                        alertMessage("Gagal mengupdate prestasi. Coba lagi.", "error");
+                    }
+                } catch (error) {
+                    alertMessage("Error: " + error.message, "error");
+                }
+            };
+            
+            // Scroll ke form
+            document.getElementById('admin').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function editStructureItem(id, structureData) {
+            const item = structureData.find(i => i.id === id);
+            if (!item) return;
+            
+            // Isi form dengan data yang ada
+            document.getElementById('structure-position').value = item.position;
+            document.getElementById('structure-name').value = item.name;
+            document.getElementById('structure-order').value = item.order;
+            
+            // Ubah tombol tambah menjadi update
+            const addButton = document.getElementById('add-structure');
+            addButton.textContent = 'Update Struktur';
+            addButton.onclick = async function() {
+                const position = document.getElementById('structure-position').value;
+                const name = document.getElementById('structure-name').value;
+                const order = document.getElementById('structure-order').value;
+                
+                if (!position || !name || !order) {
+                    alertMessage("Semua field harus diisi!", "error");
+                    return;
+                }
+                
+                try {
+                    const success = await updateStructureInFirebase(id, position, name, order);
+                    
+                    if (success) {
+                        alertMessage("Anggota struktur berhasil diupdate!");
+                        // Reset form
+                        document.getElementById('structure-position').value = '';
+                        document.getElementById('structure-name').value = '';
+                        document.getElementById('structure-order').value = '';
+                        // Kembalikan tombol ke mode tambah
+                        addButton.textContent = 'Tambah ke Struktur';
+                        addButton.onclick = addStructureHandler;
+                        // Refresh data
+                        loadDataFromFirebase();
+                    } else {
+                        alertMessage("Gagal mengupdate anggota struktur. Coba lagi.", "error");
+                    }
+                } catch (error) {
+                    alertMessage("Error: " + error.message, "error");
+                }
+            };
+            
+            // Scroll ke form
+            document.getElementById('admin').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ===========================================
+        // FUNGSI HAPUS DATA
+        // ===========================================
+        async function deleteGalleryItem(id) {
+            try {
+                const success = await deleteGalleryItemFromFirebase(id);
+                
+                if (success) {
+                    alertMessage("Foto berhasil dihapus!");
+                    loadDataFromFirebase();
+                } else {
+                    alertMessage("Gagal menghapus foto. Coba lagi.", "error");
+                }
+            } catch (error) {
+                alertMessage("Error: " + error.message, "error");
+            }
+        }
+
+        async function deleteAchievementItem(id) {
+            try {
+                const success = await deleteAchievementFromFirebase(id);
+                
+                if (success) {
+                    alertMessage("Prestasi berhasil dihapus!");
+                    loadDataFromFirebase();
+                } else {
+                    alertMessage("Gagal menghapus prestasi. Coba lagi.", "error");
+                }
+            } catch (error) {
+                alertMessage("Error: " + error.message, "error");
+            }
+        }
+
+        async function deleteStructureItem(id) {
+            try {
+                const success = await deleteStructureFromFirebase(id);
+                
+                if (success) {
+                    alertMessage("Anggota struktur berhasil dihapus!");
+                    loadDataFromFirebase();
+                } else {
+                    alertMessage("Gagal menghapus anggota struktur. Coba lagi.", "error");
+                }
+            } catch (error) {
+                alertMessage("Error: " + error.message, "error");
+            }
         }
 
         // ===========================================
@@ -926,27 +1360,154 @@
                     ${isActive ? '<i data-lucide="volume-2" class="w-4 h-4 mr-3"></i>' : '<i data-lucide="music" class="w-4 h-4 mr-3"></i>'}
                     <span class="flex-1">${index + 1}. ${song.title}</span>
                 `;
+                
+                // Tambahkan tombol edit/hapus jika admin login
+                if (isAdminLoggedIn) {
+                    const adminActions = document.createElement('div');
+                    adminActions.className = 'flex space-x-2 ml-2';
+                    adminActions.innerHTML = `
+                        <button class="text-accent-gold hover:text-yellow-600 edit-song-btn" data-id="${song.id}">
+                            <i data-lucide="edit" class="w-4 h-4"></i>
+                        </button>
+                        <button class="text-red-500 hover:text-red-700 delete-song-btn" data-id="${song.id}">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                    listItem.appendChild(adminActions);
+                }
+                
                 listItem.setAttribute('data-index', index);
                 
-                listItem.addEventListener('click', () => {
-                    if (index !== currentSongIndex) {
-                        currentSongIndex = index;
-                        const audio = document.getElementById('background-audio');
-                        audio.src = songList[currentSongIndex].url;
-                        
-                        if (isPlaying) {
-                            audio.play();
+                listItem.addEventListener('click', (e) => {
+                    // Jangan trigger jika klik tombol edit/hapus
+                    if (!e.target.closest('.edit-song-btn') && !e.target.closest('.delete-song-btn')) {
+                        if (index !== currentSongIndex) {
+                            currentSongIndex = index;
+                            const audio = document.getElementById('background-audio');
+                            audio.src = songList[currentSongIndex].url;
+                            
+                            if (isPlaying) {
+                                audio.play();
+                            }
+                            
+                            renderPlaylist();
+                            updateAudioToggleButton();
                         }
-                        
-                        renderPlaylist();
-                        updateAudioToggleButton();
+                        closePlaylistModal();
                     }
-                    closePlaylistModal();
                 });
                 
                 playlistContainer.appendChild(listItem);
             });
+            
+            // Tambahkan event listener untuk tombol edit dan hapus
+            if (isAdminLoggedIn) {
+                document.querySelectorAll('.edit-song-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.getAttribute('data-id');
+                        editSongItem(id);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-song-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.getAttribute('data-id');
+                        showDeleteConfirmation('lagu', () => deleteSongItem(id));
+                    });
+                });
+            }
+            
             lucide.createIcons();
+        }
+
+        function editSongItem(id) {
+            const item = songList.find(i => i.id === id);
+            if (!item) return;
+            
+            // Isi form dengan data yang ada
+            document.getElementById('song-url').value = item.url;
+            document.getElementById('song-title').value = item.title;
+            
+            // Ubah tombol tambah menjadi update
+            const addButton = document.getElementById('add-song');
+            addButton.textContent = 'Update Lagu';
+            addButton.onclick = async function() {
+                const songUrl = document.getElementById('song-url').value;
+                const title = document.getElementById('song-title').value;
+                
+                if (!songUrl || !title) {
+                    alertMessage("URL lagu dan judul harus diisi!", "error");
+                    return;
+                }
+                
+                try {
+                    const success = await updateSongInFirebase(id, songUrl, title);
+                    
+                    if (success) {
+                        alertMessage("Lagu berhasil diupdate!");
+                        // Reset form
+                        document.getElementById('song-url').value = '';
+                        document.getElementById('song-title').value = '';
+                        // Kembalikan tombol ke mode tambah
+                        addButton.textContent = 'Tambah ke Playlist';
+                        addButton.onclick = addSongHandler;
+                        // Refresh data
+                        loadDataFromFirebase();
+                    } else {
+                        alertMessage("Gagal mengupdate lagu. Coba lagi.", "error");
+                    }
+                } catch (error) {
+                    alertMessage("Error: " + error.message, "error");
+                }
+            };
+            
+            // Scroll ke form
+            document.getElementById('admin').scrollIntoView({ behavior: 'smooth' });
+            closePlaylistModal();
+        }
+
+        async function deleteSongItem(id) {
+            try {
+                const success = await deleteSongFromFirebase(id);
+                
+                if (success) {
+                    alertMessage("Lagu berhasil dihapus!");
+                    loadDataFromFirebase();
+                } else {
+                    alertMessage("Gagal menghapus lagu. Coba lagi.", "error");
+                }
+            } catch (error) {
+                alertMessage("Error: " + error.message, "error");
+            }
+        }
+
+        // ===========================================
+        // FUNGSI KONFIRMASI HAPUS
+        // ===========================================
+        function showDeleteConfirmation(itemType, callback) {
+            const modal = document.getElementById('delete-confirm-modal');
+            const message = document.getElementById('delete-confirm-message');
+            message.textContent = `Apakah Anda yakin ingin menghapus ${itemType} ini? Tindakan ini tidak dapat dibatalkan.`;
+            
+            deleteCallback = callback;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.style.opacity = 1;
+            }, 10);
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('delete-confirm-modal');
+            modal.style.opacity = 0;
+            setTimeout(() => {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+                deleteCallback = null;
+            }, 300);
         }
 
         // ===========================================
@@ -987,9 +1548,11 @@
             
             if (username === "BRIGPASNESAGA" && password === "ADMINBRIGPAS") {
                 isAdminLoggedIn = true;
+                localStorage.setItem('isAdminLoggedIn', 'true');
                 document.getElementById('login-section').style.display = 'none';
                 document.getElementById('admin-panel').style.display = 'block';
                 alertMessage("Login berhasil! Selamat datang di panel admin.");
+                loadDataFromFirebase(); // Refresh data untuk menampilkan tombol edit/hapus
             } else {
                 alertMessage("Username atau password salah!", "error");
             }
@@ -997,11 +1560,13 @@
 
         function logoutAdmin() {
             isAdminLoggedIn = false;
+            localStorage.removeItem('isAdminLoggedIn');
             document.getElementById('login-section').style.display = 'block';
             document.getElementById('admin-panel').style.display = 'none';
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             alertMessage("Anda telah logout.");
+            loadDataFromFirebase(); // Refresh data untuk menghilangkan tombol edit/hapus
         }
 
         function showPage(pageId) {
@@ -1019,6 +1584,121 @@
             if (pageId !== 'admin') {
                 document.getElementById('username').value = '';
                 document.getElementById('password').value = '';
+            }
+        }
+
+        // ===========================================
+        // HANDLERS UNTUK TOMBOL TAMBAH
+        // ===========================================
+        async function addGalleryItemHandler() {
+            const imageUrl = document.getElementById('gallery-image').value;
+            const title = document.getElementById('gallery-title').value;
+            const description = document.getElementById('gallery-description').value;
+            
+            if (!imageUrl || !title) {
+                alertMessage("URL gambar dan judul harus diisi!", "error");
+                return;
+            }
+            
+            try {
+                const success = await addGalleryItemToFirebase(imageUrl, title, description);
+                
+                if (success) {
+                    alertMessage("Foto berhasil ditambahkan ke galeri!");
+                    // Reset form
+                    document.getElementById('gallery-image').value = '';
+                    document.getElementById('gallery-title').value = '';
+                    document.getElementById('gallery-description').value = '';
+                    // Refresh data
+                    loadDataFromFirebase();
+                } else {
+                    alertMessage("Gagal menambahkan foto. Coba lagi.", "error");
+                }
+            } catch (error) {
+                alertMessage("Error: " + error.message, "error");
+            }
+        }
+
+        async function addSongHandler() {
+            const songUrl = document.getElementById('song-url').value;
+            const title = document.getElementById('song-title').value;
+            
+            if (!songUrl || !title) {
+                alertMessage("URL lagu dan judul harus diisi!", "error");
+                return;
+            }
+            
+            try {
+                const success = await addSongToFirebase(songUrl, title);
+                
+                if (success) {
+                    alertMessage("Lagu berhasil ditambahkan ke playlist!");
+                    // Reset form
+                    document.getElementById('song-url').value = '';
+                    document.getElementById('song-title').value = '';
+                    // Refresh data
+                    loadDataFromFirebase();
+                } else {
+                    alertMessage("Gagal menambahkan lagu. Coba lagi.", "error");
+                    }
+            } catch (error) {
+                alertMessage("Error: " + error.message, "error");
+            }
+        }
+
+        async function addAchievementHandler() {
+            const title = document.getElementById('achievement-title').value;
+            const description = document.getElementById('achievement-description').value;
+            
+            if (!title || !description) {
+                alertMessage("Judul dan deskripsi prestasi harus diisi!", "error");
+                return;
+            }
+            
+            try {
+                const success = await addAchievementToFirebase(title, description);
+                
+                if (success) {
+                    alertMessage("Prestasi berhasil ditambahkan!");
+                    // Reset form
+                    document.getElementById('achievement-title').value = '';
+                    document.getElementById('achievement-description').value = '';
+                    // Refresh data
+                    loadDataFromFirebase();
+                } else {
+                    alertMessage("Gagal menambahkan prestasi. Coba lagi.", "error");
+                }
+            } catch (error) {
+                alertMessage("Error: " + error.message, "error");
+            }
+        }
+
+        async function addStructureHandler() {
+            const position = document.getElementById('structure-position').value;
+            const name = document.getElementById('structure-name').value;
+            const order = document.getElementById('structure-order').value;
+            
+            if (!position || !name || !order) {
+                alertMessage("Semua field harus diisi!", "error");
+                return;
+            }
+            
+            try {
+                const success = await addStructureToFirebase(position, name, order);
+                
+                if (success) {
+                    alertMessage("Anggota struktur berhasil ditambahkan!");
+                    // Reset form
+                    document.getElementById('structure-position').value = '';
+                    document.getElementById('structure-name').value = '';
+                    document.getElementById('structure-order').value = '';
+                    // Refresh data
+                    loadDataFromFirebase();
+                } else {
+                    alertMessage("Gagal menambahkan anggota struktur. Coba lagi.", "error");
+                }
+            } catch (error) {
+                alertMessage("Error: " + error.message, "error");
             }
         }
 
@@ -1088,6 +1768,12 @@
             // Inisialisasi tema
             initTheme();
             
+            // Cek status login admin
+            if (isAdminLoggedIn) {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+            }
+            
             // Load data dari Firebase
             loadDataFromFirebase();
             
@@ -1120,122 +1806,36 @@
                 }
             });
             
+            // Delete Confirmation Modal
+            const deleteModal = document.getElementById('delete-confirm-modal');
+            const closeDeleteModalBtn = document.getElementById('close-delete-modal-btn');
+            const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            
+            closeDeleteModalBtn.addEventListener('click', closeDeleteModal);
+            cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+            deleteModal.addEventListener('click', (e) => {
+                if (e.target === deleteModal) {
+                    closeDeleteModal();
+                }
+            });
+            
+            confirmDeleteBtn.addEventListener('click', () => {
+                if (deleteCallback) {
+                    deleteCallback();
+                }
+                closeDeleteModal();
+            });
+            
             // Login
             document.getElementById('login-btn').addEventListener('click', loginAdmin);
             document.getElementById('logout-btn').addEventListener('click', logoutAdmin);
             
             // Admin functions dengan Firebase
-            document.getElementById('add-gallery-item').addEventListener('click', async function() {
-                const imageUrl = document.getElementById('gallery-image').value;
-                const title = document.getElementById('gallery-title').value;
-                const description = document.getElementById('gallery-description').value;
-                
-                if (!imageUrl || !title) {
-                    alertMessage("URL gambar dan judul harus diisi!", "error");
-                    return;
-                }
-                
-                try {
-                    const success = await addGalleryItemToFirebase(imageUrl, title, description);
-                    
-                    if (success) {
-                        alertMessage("Foto berhasil ditambahkan ke galeri!");
-                        // Reset form
-                        document.getElementById('gallery-image').value = '';
-                        document.getElementById('gallery-title').value = '';
-                        document.getElementById('gallery-description').value = '';
-                        // Refresh data
-                        loadDataFromFirebase();
-                    } else {
-                        alertMessage("Gagal menambahkan foto. Coba lagi.", "error");
-                    }
-                } catch (error) {
-                    alertMessage("Error: " + error.message, "error");
-                }
-            });
-            
-            document.getElementById('add-song').addEventListener('click', async function() {
-                const songUrl = document.getElementById('song-url').value;
-                const title = document.getElementById('song-title').value;
-                
-                if (!songUrl || !title) {
-                    alertMessage("URL lagu dan judul harus diisi!", "error");
-                    return;
-                }
-                
-                try {
-                    const success = await addSongToFirebase(songUrl, title);
-                    
-                    if (success) {
-                        alertMessage("Lagu berhasil ditambahkan ke playlist!");
-                        // Reset form
-                        document.getElementById('song-url').value = '';
-                        document.getElementById('song-title').value = '';
-                        // Refresh data
-                        loadDataFromFirebase();
-                    } else {
-                        alertMessage("Gagal menambahkan lagu. Coba lagi.", "error");
-                        }
-                } catch (error) {
-                    alertMessage("Error: " + error.message, "error");
-                }
-            });
-            
-            document.getElementById('add-achievement').addEventListener('click', async function() {
-                const title = document.getElementById('achievement-title').value;
-                const description = document.getElementById('achievement-description').value;
-                
-                if (!title || !description) {
-                    alertMessage("Judul dan deskripsi prestasi harus diisi!", "error");
-                    return;
-                }
-                
-                try {
-                    const success = await addAchievementToFirebase(title, description);
-                    
-                    if (success) {
-                        alertMessage("Prestasi berhasil ditambahkan!");
-                        // Reset form
-                        document.getElementById('achievement-title').value = '';
-                        document.getElementById('achievement-description').value = '';
-                        // Refresh data
-                        loadDataFromFirebase();
-                    } else {
-                        alertMessage("Gagal menambahkan prestasi. Coba lagi.", "error");
-                    }
-                } catch (error) {
-                    alertMessage("Error: " + error.message, "error");
-                }
-            });
-            
-            document.getElementById('add-structure').addEventListener('click', async function() {
-                const position = document.getElementById('structure-position').value;
-                const name = document.getElementById('structure-name').value;
-                const order = document.getElementById('structure-order').value;
-                
-                if (!position || !name || !order) {
-                    alertMessage("Semua field harus diisi!", "error");
-                    return;
-                }
-                
-                try {
-                    const success = await addStructureToFirebase(position, name, order);
-                    
-                    if (success) {
-                        alertMessage("Anggota struktur berhasil ditambahkan!");
-                        // Reset form
-                        document.getElementById('structure-position').value = '';
-                        document.getElementById('structure-name').value = '';
-                        document.getElementById('structure-order').value = '';
-                        // Refresh data
-                        loadDataFromFirebase();
-                    } else {
-                        alertMessage("Gagal menambahkan anggota struktur. Coba lagi.", "error");
-                    }
-                } catch (error) {
-                    alertMessage("Error: " + error.message, "error");
-                }
-            });
+            document.getElementById('add-gallery-item').addEventListener('click', addGalleryItemHandler);
+            document.getElementById('add-song').addEventListener('click', addSongHandler);
+            document.getElementById('add-achievement').addEventListener('click', addAchievementHandler);
+            document.getElementById('add-structure').addEventListener('click', addStructureHandler);
             
             // Audio player
             const audio = document.getElementById('background-audio');
@@ -1286,4 +1886,4 @@
         });
     </script>
 </body>
-</html>
+    </html>
